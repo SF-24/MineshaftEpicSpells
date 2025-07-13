@@ -22,7 +22,6 @@ import java.util.List;
 
 import epicspellsplugin.EpicSpellsPlugin;
 import epicspellsplugin.Mage;
-import epicspellsplugin.MageManager;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.TabExecutor;

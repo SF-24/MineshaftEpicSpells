@@ -38,29 +38,16 @@ public class EpicSpellsPlugin extends JavaPlugin{
     
     private Logger log;
     private BukkitScheduler scheduler;
-    private SpellManager spellManager;
-    private MageManager mageManager;
     private Spellcaster spellcaster;
-    
+
     @Override
     public void onEnable(){
         log = this.getLogger();
-        
-        mageManager = new MageManager();
-        spellManager = new SpellManager(log, mageManager);
-        spellcaster = new Spellcaster(spellManager, mageManager, log);
+        spellcaster = new Spellcaster(log);
         
         scheduler = Bukkit.getScheduler();
         PluginManager pluginManager = Bukkit.getPluginManager();
         pluginManager.registerEvents(new PlayerServerEventListener(this), this);
-        TabExecutor spellTabExecutor = new SpellTabExecutor(this);
-        this.getCommand("spell").setTabCompleter(spellTabExecutor);
-        this.getCommand("spell").setExecutor(spellTabExecutor);
-        TabExecutor mageTabExecutor = new MageTabExecutor(this);
-        this.getCommand("mage").setTabCompleter(mageTabExecutor);
-        this.getCommand("mage").setExecutor(mageTabExecutor);
-        
-        spellManager.setup();
         setup();
         
         log.info("Plugin enabled");
@@ -69,83 +56,17 @@ public class EpicSpellsPlugin extends JavaPlugin{
     public void onDisable(){
         log.info("Plugin disabled");
     }
-    
-    @Override
-    public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args){
-        switch (cmd.getName()) {
-            case "addmage":
-                if (args.length == 1) {
-                    if(sender.isOp()) {
-                        Player player = Bukkit.getPlayer(args[0]);
-                        if(player != null) {
-                            if(mageManager.getMage(player) == null) {
-                                mageManager.addPlayer(player);
-                                sender.sendMessage(String.format("%s is now a Mage", player.getDisplayName()));
-                                player.sendMessage(String.format("%s made you a Mage", sender.getName()));
-                            } else {
-                                sender.sendMessage(String.format("%s is already a Mage!", player.getDisplayName()));
-                            }
-                        } else {
-                            sender.sendMessage(String.format("No player named %s", args[0]));
-                        }
-                    } else {
-                        sender.sendMessage("You don't have permissions to run this command!");
-                    }
-                } else {
-                    if (sender instanceof Player) {
-                        mageManager.addPlayer((Player) sender);
-                        sender.sendMessage("You are now a Mage");
-                    }
-                }
-                return true;
-            case "removemage":
-                if (args.length == 1) {
-                    if(sender.isOp()) {
-                        Player player = Bukkit.getPlayer(args[0]);
-                        if(player != null) {
-                            if(mageManager.getMage(player) != null) {
-                                mageManager.removePlayer(player);
-                                sender.sendMessage(String.format("%s is no longer a Mage", player.getDisplayName()));
-                                player.sendMessage(String.format("%s removed you from being a Mage", sender.getName()));
-                            } else {
-                                sender.sendMessage(String.format("%s is not a Mage!", player.getDisplayName()));
-                            }
-                        } else {
-                            sender.sendMessage(String.format("No player named %s", args[0]));
-                        }
-                    } else {
-                        sender.sendMessage("You don't have permissions to run this command!");
-                    }
-                } else {
-                    if (sender instanceof Player) {
-                        mageManager.removePlayer((Player) sender);
-                        sender.sendMessage("You are no longer a Mage");
-                    }
-                }
-                return true;
-        }
-        return false;
-    }
-    
+
     public SpellManager getSpellManager(){
         return spellManager;
-    }
-    
-    public MageManager getMageManager(){
-        return mageManager;
     }
 
     public Spellcaster getSpellcaster() { return spellcaster; }
 
     public void setup(){
-        for(Player player: Bukkit.getOnlinePlayers()){
-            mageManager.addPlayer(player);
-        }
         scheduler.scheduleSyncRepeatingTask(this, new Runnable() {
             @Override
             public void run() {
-                mageManager.tick();
-                spellManager.tick();
                 spellcaster.tick();
             }
         }, 1, 1);

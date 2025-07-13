@@ -22,7 +22,6 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerJoinEvent;
 
 import epicspellsplugin.EpicSpellsPlugin;
-import epicspellsplugin.MageManager;
 import org.bukkit.event.player.PlayerQuitEvent;
 /**
  *
