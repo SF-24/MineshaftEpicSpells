@@ -16,18 +16,11 @@
  */
 package epicspellsplugin;
 
-import epicspellsplugin.listener.PlayerServerEventListener;
 import java.util.logging.Logger;
 import org.bukkit.Bukkit;
-import org.bukkit.command.Command;
-import org.bukkit.command.CommandSender;
-import org.bukkit.command.TabExecutor;
-import org.bukkit.entity.Player;
 import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitScheduler;
-import epicspellsplugin.tabExecutors.MageTabExecutor;
-import epicspellsplugin.tabExecutors.SpellTabExecutor;
 import epicspellsplugin.spellcasting.Spellcaster;
 
 /**
@@ -46,8 +39,6 @@ public class EpicSpellsPlugin extends JavaPlugin{
         spellcaster = new Spellcaster(log);
         
         scheduler = Bukkit.getScheduler();
-        PluginManager pluginManager = Bukkit.getPluginManager();
-        pluginManager.registerEvents(new PlayerServerEventListener(this), this);
         setup();
         
         log.info("Plugin enabled");
@@ -55,10 +46,6 @@ public class EpicSpellsPlugin extends JavaPlugin{
     @Override
     public void onDisable(){
         log.info("Plugin disabled");
-    }
-
-    public SpellManager getSpellManager(){
-        return spellManager;
     }
 
     public Spellcaster getSpellcaster() { return spellcaster; }

@@ -2,7 +2,6 @@ package epicspellsplugin.spellcasting;
 
 import com.mineshaft.mineshaftapi.events.MineshaftPatternDrawEvent;
 import com.mineshaft.mineshaftapi.util.ItemUtil;
-import epicspellsplugin.SpellManager;
 import epicspellsplugin.utils.DirectionalParticle;
 import epicspellsplugin.utils.LocationUtils;
 import org.bukkit.Bukkit;
