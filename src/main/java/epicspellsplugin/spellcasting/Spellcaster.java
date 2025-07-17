@@ -36,63 +36,82 @@ public class Spellcaster {
             }
             ItemStack item = player.getInventory().getItemInMainHand();
             // check if player is holding a wand and not flying
-            if(!player.isFlying() && ItemUtil.isWand(item)){
-                // if player is sneaking, he is casting
-
-                // create point in front of the player
-                Location point = player.getEyeLocation().add(player.getEyeLocation().getDirection().normalize().multiply(3));
-                if(player.isSneaking()) {
-                    SpellcastPatternRecord spellcastPatternRecord = getSpellcastPatternRecord(player);
-                    List<Location> castingPoints = spellcastPatternRecord.getCastingPoints();
-                    if(!castingPoints.isEmpty()) {
+            if(player.getInventory().getItemInMainHand().getItemMeta()!=null) {
+                if(!player.isFlying() && ItemUtil.isWand(item)){
+                    // if player is sneaking, he is casting
+                    if(player.isSneaking()){
+                        // create point in front of the player
+                        Location point = player.getEyeLocation().add(player.getEyeLocation().getDirection().normalize().multiply(3));
+                        if(isCasting(player)) {
+                            SpellcastPatternRecord spellcastPatternRecord = getSpellcastPatternRecord(player);
+                            List<Location> castingPoints = spellcastPatternRecord.getCastingPoints();
+                            if(castingPoints.size() > 0) {
+                                Vector castingNormalPlane = spellcastPatternRecord.getNormalPlane();
+                                point = LocationUtils.projectPointOnPlane(castingPoints.get(0), castingNormalPlane, point);
+                                Location lastPoint = castingPoints.get(castingPoints.size() - 1);
+                                // only record point if it has a certain distance to the last point
+                                // to avoid adding unnecessary points if the player is not moving
+                                if (point.distance(lastPoint) > 0.1) {
+                                    Location between = lastPoint.clone().add(point).multiply(0.5);
+                                    spellcastPatternRecord.addCastingPoint(between);
+                                    spellcastPatternRecord.addCastingPoint(point);
+                                }
+                                // show pattern to the player by drawing particles
+                                for (Location loc : castingPoints) {
+                                    DirectionalParticle.spawn(Particle.ELECTRIC_SPARK, loc, new Vector(), 0);
+                                }
+                            } else {
+                                spellcastPatternRecord.addCastingPoint(point);
+                            }
+                            // player just started casting, so start new pattern recording
+                        } else {
+//                            dir = player.getLocation().getDirection().normalize();
+                            Vector normalizedPlane = player.getEyeLocation().getDirection().normalize().multiply(-1);
+                            SpellcastPatternRecord spellcastPatternRecord = new SpellcastPatternRecord(normalizedPlane);
+                            castingMap.put(player, spellcastPatternRecord);
+                        }
+                        // if the player recorded a pattern and stopped sneaking, he is done with casting
+                        // and the pattern has to be analysed
+                    } else if(isCasting(player)){
+                        SpellcastPatternRecord spellcastPatternRecord = getSpellcastPatternRecord(player);
+                        List<Location> castingPoints = spellcastPatternRecord.getCastingPoints();
                         Vector castingNormalPlane = spellcastPatternRecord.getNormalPlane();
-                        point = LocationUtils.projectPointOnPlane(castingPoints.get(0), castingNormalPlane, point);
-                        Location lastPoint = castingPoints.get(castingPoints.size() - 1);
-                        // only record point if it has a certain distance to the last point
-                        // to avoid adding unnecessary points if the player is not moving
-                        if (point.distance(lastPoint) > 0.1) {
-                            Location between = lastPoint.clone().add(point).multiply(0.5);
-                            spellcastPatternRecord.addCastingPoint(between);
-                            spellcastPatternRecord.addCastingPoint(point);
+                        List<Location> transformedLocations = new ArrayList<>();
+                        double angle = Math.acos(castingNormalPlane.dot(new Vector(0, 0, 1))/castingNormalPlane.length());
+                        boolean mirror = false;
+                        if(angle > Math.PI/2){
+                            angle -= Math.PI;
+                            mirror = true;
                         }
-                        // show pattern to the player by drawing particles
-                        for (Location loc : castingPoints) {
-                            DirectionalParticle.spawn(Particle.ELECTRIC_SPARK, loc, new Vector(), 0);
+                        Vector axis = castingNormalPlane.clone().crossProduct(new Vector(0, 0, 1)).normalize();
+                        for(int i = 1; i < castingPoints.size(); i++){
+                            Vector temp = castingPoints.get(i).clone().toVector().subtract(castingPoints.get(0).toVector());
+                            temp.rotateAroundAxis(axis, angle);
+                            temp.setZ(0);
+                            if(mirror){
+                                temp.rotateAroundY(Math.PI);
+                            }
+                            if(castingPoints.size()>0) {
+                                Location loc = castingPoints.get(0).clone().add(temp);
+                                transformedLocations.add(loc);
+                            }
                         }
-                    } else {
-                        spellcastPatternRecord.addCastingPoint(point);
-                    }
-                // player just started casting, so start new pattern recording
-                } else {
-                    Vector normalizedPlane = player.getEyeLocation().getDirection().normalize().multiply(-1);
-                    SpellcastPatternRecord spellcastPatternRecord = new SpellcastPatternRecord(normalizedPlane);
-                    List<Location> castingPoints = spellcastPatternRecord.getCastingPoints();
-                    Vector castingNormalPlane = spellcastPatternRecord.getNormalPlane();
-                    List<Location> transformedLocations = new ArrayList<>();
-                    double angle = Math.acos(castingNormalPlane.dot(new Vector(0, 0, 1))/castingNormalPlane.length());
-                    boolean mirror = false;
-                    if(angle > Math.PI/2){
-                        angle -= Math.PI;
-                        mirror = true;
-                    }
-                    Vector axis = castingNormalPlane.clone().crossProduct(new Vector(0, 0, 1)).normalize();
-                    for(int i = 1; i < castingPoints.size(); i++){
-                        Vector temp = castingPoints.get(i).clone().toVector().subtract(castingPoints.get(0).toVector());
-                        temp.rotateAroundAxis(axis, angle);
-                        temp.setZ(0);
-                        if(mirror){
-                            temp.rotateAroundY(Math.PI);
-                        }
-                        Location loc = castingPoints.get(0).clone().add(temp);
-                        transformedLocations.add(loc);
-                    }
-                    List<int[]> filteredList = pointsToFilteredVectors(transformedLocations, 4);
-                    List<Integer> lines = filteredVectorsToPattern(filteredList);
-                    log.info(String.format("Recorded pattern %s", Arrays.toString(lines.toArray())));
 
-                    // Call the event with Mineshaft
-                    MineshaftPatternDrawEvent event = new MineshaftPatternDrawEvent(player,lines);
-                    Bukkit.getPluginManager().callEvent(event);
+                        // Important, has been changed
+                        List<int[]> filteredList = pointsToFilteredVectors(transformedLocations, 2);
+                        List<Integer> lines = filteredVectorsToPattern(filteredList);
+                        log.info(String.format("Recorded pattern %s", Arrays.toString(lines.toArray())));
+
+
+                        // try to map the drawn pattern to a spell
+                        SpellcastPatternMapping patternMapping = patternMappings.get(player);
+                        log.info(String.format("Triggering spell with pattern %s", patternMapping));
+                        MineshaftPatternDrawEvent patternDrawEvent = new MineshaftPatternDrawEvent(player, lines);
+                        Bukkit.getPluginManager().callEvent(patternDrawEvent);
+                        castingMap.remove(player);
+                    }
+                } else {
+                    castingMap.remove(player);
                 }
             }
         }
@@ -174,4 +193,7 @@ public class Spellcaster {
         return castingMap.get(player);
     }
 
+    public boolean isCasting(Player mage){
+        return castingMap.containsKey(mage);
+    }
 }
