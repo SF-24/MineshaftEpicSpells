@@ -98,7 +98,8 @@ public class Spellcaster {
                         }
 
                         // Important, has been changed
-                        List<int[]> filteredList = pointsToFilteredVectors(transformedLocations, 2);
+                        // TODO: find better value
+                        List<int[]> filteredList = pointsToFilteredVectors(transformedLocations, 4);
                         List<Integer> lines = filteredVectorsToPattern(filteredList);
                         log.info(String.format("Recorded pattern %s", Arrays.toString(lines.toArray())));
 
