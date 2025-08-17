@@ -103,7 +103,6 @@ public class Spellcaster {
                         List<Integer> lines = filteredVectorsToPattern(filteredList);
                         log.info(String.format("Recorded pattern %s", Arrays.toString(lines.toArray())));
 
-
                         // try to map the drawn pattern to a spell
                         SpellcastPatternMapping patternMapping = patternMappings.get(player);
                         log.info(String.format("Triggering spell with pattern %s", patternMapping));
